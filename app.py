@@ -26,7 +26,7 @@ menggunakan metode AHP-TOPSIS.
 """)
 
 # =========================================================
-# KRITERIA DAN BOBOT AHP
+# KRITERIA DAN BOBOT
 # =========================================================
 
 kriteria = [
@@ -38,15 +38,53 @@ kriteria = [
     "Keamanan Data dan Privasi"
 ]
 
-# Bobot hasil AHP
-bobot = np.array([
-    0.46,
-    0.18,
-    0.10,
-    0.04,
-    0.15,
-    0.07
-])
+# =========================================================
+# SESSION STATE
+# =========================================================
+
+# -----------------------------
+# BOBOT AHP
+# -----------------------------
+
+if "bobot" not in st.session_state:
+
+    st.session_state["bobot"] = np.array([
+        0.46,
+        0.18,
+        0.10,
+        0.04,
+        0.15,
+        0.07
+    ])
+
+# -----------------------------
+# DATA ALTERNATIF
+# -----------------------------
+
+if "data_alternatif" not in st.session_state:
+
+    st.session_state["data_alternatif"] = pd.DataFrame({
+
+        "Alternatif": [
+            "ChatGPT",
+            "Gemini",
+            "Claude",
+            "Microsoft Copilot",
+            "Perplexity AI"
+        ],
+
+        "Akurasi Jawaban": [0.34, 0.13, 0.34, 0.06, 0.13],
+
+        "Kemudahan Penggunaan": [0.44, 0.17, 0.17, 0.17, 0.06],
+
+        "Kecepatan Respon": [0.23, 0.23, 0.08, 0.23, 0.23],
+
+        "Kelengkapan Fitur Gratis": [0.13, 0.34, 0.06, 0.13, 0.34],
+
+        "Kemampuan Membantu Akademik": [0.34, 0.13, 0.34, 0.06, 0.13],
+
+        "Keamanan Data dan Privasi": [0.17, 0.17, 0.44, 0.17, 0.06]
+    })
 
 # =========================================================
 # SIDEBAR MENU
@@ -79,6 +117,10 @@ if menu == "Dashboard":
     metode AHP-TOPSIS.
     """)
 
+    # =====================================================
+    # TUJUAN SISTEM
+    # =====================================================
+
     st.subheader("🎯 Tujuan Sistem")
 
     st.write("""
@@ -86,10 +128,56 @@ if menu == "Dashboard":
     platform AI terbaik untuk menunjang aktivitas akademik mahasiswa.
     """)
 
-    st.subheader("📊 Kriteria")
+    # =====================================================
+    # KRITERIA
+    # =====================================================
 
-    for i, k in enumerate(kriteria):
-        st.write(f"C{i+1} : {k}")
+    st.subheader("📊 Kriteria yang Digunakan")
+
+    kriteria_df = pd.DataFrame({
+        "Kode": ["C1", "C2", "C3", "C4", "C5", "C6"],
+        "Kriteria": kriteria,
+        "Jenis": [
+            "Benefit",
+            "Benefit",
+            "Benefit",
+            "Benefit",
+            "Benefit",
+            "Benefit"
+        ]
+    })
+
+    st.dataframe(
+        kriteria_df,
+        use_container_width=True
+    )
+
+    # =====================================================
+    # ALTERNATIF
+    # =====================================================
+
+    st.subheader("🤖 Alternatif yang Dibandingkan")
+
+    st.dataframe(
+        st.session_state["data_alternatif"][["Alternatif"]],
+        use_container_width=True
+    )
+
+    # =====================================================
+    # FLOW SISTEM
+    # =====================================================
+
+    st.subheader("🔄 Alur Sistem (Flow Proses)")
+
+    st.markdown("""
+    1. Pengguna memasukkan data alternatif platform AI  
+    2. Sistem menggunakan bobot hasil perhitungan metode AHP  
+    3. Sistem melakukan normalisasi matriks keputusan  
+    4. Sistem menghitung matriks ternormalisasi terbobot  
+    5. Sistem menentukan solusi ideal positif dan negatif  
+    6. Sistem menghitung nilai preferensi setiap alternatif  
+    7. Sistem menampilkan ranking platform AI terbaik  
+    """)
 
 # =========================================================
 # BOBOT AHP
@@ -101,17 +189,34 @@ elif menu == "Bobot AHP":
 
     bobot_df = pd.DataFrame({
         "Kriteria": kriteria,
-        "Bobot": bobot
+        "Bobot": st.session_state["bobot"]
     })
 
-    st.dataframe(
-        bobot_df.style.format({
-            "Bobot": "{:.2f}"
-        }),
-        use_container_width=True
+    edited_bobot = st.data_editor(
+        bobot_df,
+        use_container_width=True,
+        num_rows="fixed"
     )
 
-    st.success("✅ Bobot diperoleh dari hasil perhitungan metode AHP.")
+    # =====================================================
+    # TOMBOL SIMPAN
+    # =====================================================
+
+    if st.button("💾 Simpan Bobot"):
+
+        total_bobot = edited_bobot["Bobot"].sum()
+
+        if round(total_bobot, 2) != 1.00:
+
+            st.error(
+                f"❌ Total bobot harus = 1.00 (Saat ini = {total_bobot:.2f})"
+            )
+
+        else:
+
+            st.session_state["bobot"] = edited_bobot["Bobot"].values
+
+            st.success("✅ Bobot berhasil disimpan.")
 
 # =========================================================
 # INPUT ALTERNATIF
@@ -125,52 +230,21 @@ elif menu == "Input Alternatif":
     Tambahkan alternatif dan masukkan nilai untuk setiap kriteria.
     """)
 
-    # =====================================================
-    # DEFAULT DATA
-    # =====================================================
-
-    default_data = pd.DataFrame({
-        "Alternatif": [
-            "ChatGPT",
-            "Gemini",
-            "Claude",
-            "Microsoft Copilot",
-            "Perplexity AI"
-        ],
-
-        "Akurasi Jawaban": [0.34, 0.13, 0.34, 0.06, 0.13],
-
-        "Kemudahan Penggunaan": [0.44, 0.17, 0.17, 0.17, 0.06],
-
-        "Kecepatan Respon": [0.23, 0.23, 0.08, 0.23, 0.23],
-
-        "Kelengkapan Fitur Gratis": [0.13, 0.34, 0.06, 0.13, 0.34],
-
-        "Kemampuan Membantu Akademik": [0.34, 0.13, 0.34, 0.06, 0.13],
-
-        "Keamanan Data dan Privasi": [0.17, 0.17, 0.44, 0.17, 0.06]
-    })
-
-    # =====================================================
-    # SESSION STATE
-    # =====================================================
-
-    if "data_alternatif" not in st.session_state:
-        st.session_state["data_alternatif"] = default_data
-
-    # =====================================================
-    # DATA EDITOR
-    # =====================================================
-
     edited_df = st.data_editor(
         st.session_state["data_alternatif"],
         use_container_width=True,
         num_rows="dynamic"
     )
 
-    st.session_state["data_alternatif"] = edited_df
+    # =====================================================
+    # TOMBOL SIMPAN
+    # =====================================================
 
-    st.success("✅ Data alternatif berhasil disimpan.")
+    if st.button("💾 Simpan Data Alternatif"):
+
+        st.session_state["data_alternatif"] = edited_df
+
+        st.success("✅ Data alternatif berhasil disimpan.")
 
 # =========================================================
 # PERHITUNGAN TOPSIS
@@ -180,81 +254,77 @@ elif menu == "Perhitungan TOPSIS":
 
     st.header("🧮 Perhitungan TOPSIS")
 
-    if "data_alternatif" not in st.session_state:
+    data_awal = st.session_state["data_alternatif"]
 
-        st.warning("⚠️ Silakan input data alternatif terlebih dahulu.")
+    bobot = st.session_state["bobot"]
 
-    else:
+    alternatif = data_awal["Alternatif"]
 
-        data_awal = st.session_state["data_alternatif"]
+    data_nilai = data_awal.iloc[:, 1:].values.astype(float)
 
-        alternatif = data_awal["Alternatif"]
+    # =====================================================
+    # NORMALISASI
+    # =====================================================
 
-        data_nilai = data_awal.iloc[:, 1:].values.astype(float)
+    pembagi = np.sqrt(np.sum(data_nilai**2, axis=0))
 
-        # =================================================
-        # NORMALISASI
-        # =================================================
+    normalisasi = data_nilai / pembagi
 
-        pembagi = np.sqrt(np.sum(data_nilai**2, axis=0))
+    normalisasi_df = pd.DataFrame(
+        normalisasi,
+        columns=kriteria,
+        index=alternatif
+    )
 
-        normalisasi = data_nilai / pembagi
+    st.subheader("1️⃣ Matriks Normalisasi")
 
-        normalisasi_df = pd.DataFrame(
-            normalisasi,
-            columns=kriteria,
-            index=alternatif
-        )
+    st.dataframe(
+        normalisasi_df.style.format("{:.4f}"),
+        use_container_width=True
+    )
 
-        st.subheader("1️⃣ Matriks Normalisasi")
+    # =====================================================
+    # NORMALISASI TERBOBOT
+    # =====================================================
 
-        st.dataframe(
-            normalisasi_df.style.format("{:.4f}"),
-            use_container_width=True
-        )
+    terbobot = normalisasi * bobot
 
-        # =================================================
-        # NORMALISASI TERBOBOT
-        # =================================================
+    terbobot_df = pd.DataFrame(
+        terbobot,
+        columns=kriteria,
+        index=alternatif
+    )
 
-        terbobot = normalisasi * bobot
+    st.subheader("2️⃣ Matriks Ternormalisasi Terbobot")
 
-        terbobot_df = pd.DataFrame(
-            terbobot,
-            columns=kriteria,
-            index=alternatif
-        )
+    st.dataframe(
+        terbobot_df.style.format("{:.4f}"),
+        use_container_width=True
+    )
 
-        st.subheader("2️⃣ Matriks Ternormalisasi Terbobot")
+    # =====================================================
+    # SOLUSI IDEAL
+    # =====================================================
 
-        st.dataframe(
-            terbobot_df.style.format("{:.4f}"),
-            use_container_width=True
-        )
+    ideal_positif = np.max(terbobot, axis=0)
 
-        # =================================================
-        # SOLUSI IDEAL
-        # =================================================
+    ideal_negatif = np.min(terbobot, axis=0)
 
-        ideal_positif = np.max(terbobot, axis=0)
+    solusi_df = pd.DataFrame({
+        "Kriteria": kriteria,
+        "Ideal Positif": ideal_positif,
+        "Ideal Negatif": ideal_negatif
+    })
 
-        ideal_negatif = np.min(terbobot, axis=0)
+    st.subheader("3️⃣ Solusi Ideal")
 
-        solusi_df = pd.DataFrame({
-            "Kriteria": kriteria,
-            "Ideal Positif": ideal_positif,
-            "Ideal Negatif": ideal_negatif
-        })
-
-        st.subheader("3️⃣ Solusi Ideal")
-
-        st.dataframe(
-            solusi_df.style.format({
-                "Ideal Positif": "{:.4f}",
-                "Ideal Negatif": "{:.4f}"
-            }),
-            use_container_width=True
-        )
+    st.dataframe(
+        solusi_df.style.format({
+            "Ideal Positif": "{:.4f}",
+            "Ideal Negatif": "{:.4f}"
+        }),
+        use_container_width=True
+    )
 
 # =========================================================
 # HASIL RANKING
@@ -264,118 +334,114 @@ elif menu == "Hasil Ranking":
 
     st.header("🏆 Hasil Ranking TOPSIS")
 
-    if "data_alternatif" not in st.session_state:
+    data_awal = st.session_state["data_alternatif"]
 
-        st.warning("⚠️ Silakan input data alternatif terlebih dahulu.")
+    bobot = st.session_state["bobot"]
 
-    else:
+    alternatif = data_awal["Alternatif"]
 
-        data_awal = st.session_state["data_alternatif"]
+    data_nilai = data_awal.iloc[:, 1:].values.astype(float)
 
-        alternatif = data_awal["Alternatif"]
+    # =====================================================
+    # NORMALISASI
+    # =====================================================
 
-        data_nilai = data_awal.iloc[:, 1:].values.astype(float)
+    pembagi = np.sqrt(np.sum(data_nilai**2, axis=0))
 
-        # =================================================
-        # NORMALISASI
-        # =================================================
+    normalisasi = data_nilai / pembagi
 
-        pembagi = np.sqrt(np.sum(data_nilai**2, axis=0))
+    # =====================================================
+    # NORMALISASI TERBOBOT
+    # =====================================================
 
-        normalisasi = data_nilai / pembagi
+    terbobot = normalisasi * bobot
 
-        # =================================================
-        # NORMALISASI TERBOBOT
-        # =================================================
+    # =====================================================
+    # SOLUSI IDEAL
+    # =====================================================
 
-        terbobot = normalisasi * bobot
+    ideal_positif = np.max(terbobot, axis=0)
 
-        # =================================================
-        # SOLUSI IDEAL
-        # =================================================
+    ideal_negatif = np.min(terbobot, axis=0)
 
-        ideal_positif = np.max(terbobot, axis=0)
+    # =====================================================
+    # JARAK SOLUSI IDEAL
+    # =====================================================
 
-        ideal_negatif = np.min(terbobot, axis=0)
+    d_positif = np.sqrt(
+        np.sum((terbobot - ideal_positif)**2, axis=1)
+    )
 
-        # =================================================
-        # JARAK SOLUSI IDEAL
-        # =================================================
+    d_negatif = np.sqrt(
+        np.sum((terbobot - ideal_negatif)**2, axis=1)
+    )
 
-        d_positif = np.sqrt(
-            np.sum((terbobot - ideal_positif)**2, axis=1)
-        )
+    # =====================================================
+    # NILAI PREFERENSI
+    # =====================================================
 
-        d_negatif = np.sqrt(
-            np.sum((terbobot - ideal_negatif)**2, axis=1)
-        )
+    preferensi = d_negatif / (d_positif + d_negatif)
 
-        # =================================================
-        # NILAI PREFERENSI
-        # =================================================
+    hasil = pd.DataFrame({
+        "Alternatif": alternatif,
+        "Nilai Preferensi": preferensi
+    })
 
-        preferensi = d_negatif / (d_positif + d_negatif)
+    hasil["Ranking"] = hasil["Nilai Preferensi"].rank(
+        ascending=False,
+        method="min"
+    ).astype(int)
 
-        hasil = pd.DataFrame({
-            "Alternatif": alternatif,
-            "Nilai Preferensi": preferensi
-        })
+    hasil = hasil.sort_values(
+        by="Nilai Preferensi",
+        ascending=False
+    )
 
-        hasil["Ranking"] = hasil["Nilai Preferensi"].rank(
-            ascending=False,
-            method="min"
-        ).astype(int)
+    # =====================================================
+    # OUTPUT TABEL
+    # =====================================================
 
-        hasil = hasil.sort_values(
-            by="Nilai Preferensi",
-            ascending=False
-        )
+    st.dataframe(
+        hasil.style.format({
+            "Nilai Preferensi": "{:.4f}"
+        }),
+        use_container_width=True
+    )
 
-        # =================================================
-        # OUTPUT TABEL
-        # =================================================
+    # =====================================================
+    # GRAFIK
+    # =====================================================
 
-        st.dataframe(
-            hasil.style.format({
-                "Nilai Preferensi": "{:.4f}"
-            }),
-            use_container_width=True
-        )
+    st.subheader("📈 Grafik Ranking")
 
-        # =================================================
-        # GRAFIK
-        # =================================================
+    st.bar_chart(
+        hasil.set_index("Alternatif")["Nilai Preferensi"]
+    )
 
-        st.subheader("📈 Grafik Ranking")
+    # =====================================================
+    # REKOMENDASI
+    # =====================================================
 
-        st.bar_chart(
-            hasil.set_index("Alternatif")["Nilai Preferensi"]
-        )
+    terbaik = hasil.iloc[0]
 
-        # =================================================
-        # REKOMENDASI
-        # =================================================
+    st.success(
+        f"""
+        Rekomendasi Platform AI Terbaik adalah 
+        {terbaik['Alternatif']} 
+        dengan nilai preferensi sebesar 
+        {terbaik['Nilai Preferensi']:.4f}
+        """
+    )
 
-        terbaik = hasil.iloc[0]
+    # =====================================================
+    # DOWNLOAD CSV
+    # =====================================================
 
-        st.success(
-            f"""
-            Rekomendasi Platform AI Terbaik adalah 
-            {terbaik['Alternatif']} 
-            dengan nilai preferensi sebesar 
-            {terbaik['Nilai Preferensi']:.4f}
-            """
-        )
+    csv = hasil.to_csv(index=False).encode('utf-8')
 
-        # =================================================
-        # DOWNLOAD CSV
-        # =================================================
-
-        csv = hasil.to_csv(index=False).encode('utf-8')
-
-        st.download_button(
-            label="⬇️ Download Hasil Ranking",
-            data=csv,
-            file_name='hasil_ranking_topsis.csv',
-            mime='text/csv'
-        )
+    st.download_button(
+        label="⬇️ Download Hasil Ranking",
+        data=csv,
+        file_name='hasil_ranking_topsis.csv',
+        mime='text/csv'
+    )
